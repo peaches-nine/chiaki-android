@@ -8,6 +8,7 @@ import android.app.AlertDialog
 import android.content.pm.ActivityInfo
 import android.graphics.Matrix
 import android.media.AudioAttributes
+import android.net.TrafficStats
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -35,6 +36,7 @@ import com.metallic.chiaki.R
 import com.metallic.chiaki.common.Preferences
 import com.metallic.chiaki.common.ext.viewModelFactory
 import com.metallic.chiaki.databinding.ActivityStreamBinding
+import com.metallic.chiaki.lib.Codec
 import com.metallic.chiaki.lib.ConnectInfo
 import com.metallic.chiaki.lib.ConnectVideoProfile
 import com.metallic.chiaki.session.StreamState
@@ -88,7 +90,6 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		binding = ActivityStreamBinding.inflate(layoutInflater)
 		setContentView(binding.root)
 		window.decorView.setOnSystemUiVisibilityChangeListener(this)
-
 
 		//填充刘海区域
 		if(Preferences(this).screenCutoutModeEnabled){
@@ -149,6 +150,7 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 
 		//viewModel.session.attachToTextureView(textureView)
 		viewModel.session.attachToSurfaceView(binding.surfaceView)
+
 		viewModel.session.state.observe(this, Observer { this.stateChanged(it) })
 		adjustStreamViewAspect()
 
@@ -158,6 +160,14 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		if(Preferences(this).rumbleEnabled)
 		{
 			viewModel.session.rumbleState.observe(this, Observer {
+
+				//自适应扳机震动
+				if(it.type.toInt().toUInt() ==1U){
+					//没启用则忽略
+					if(!Preferences(this).rumbleTriggerGamePadEnabled){
+						return@Observer
+					}
+				}
 				//手柄震动马达
 				if(Preferences(this).rumbleGamePadEnabled){
 					val deviceIds = InputDevice.getDeviceIds()
@@ -199,7 +209,8 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 //				Log.i("axixiLogY", "触觉反馈")
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 					val vibrationAttributes = VibrationAttributes.Builder()
-						.setUsage(VibrationAttributes.USAGE_MEDIA)
+//						.setUsage(VibrationAttributes.USAGE_MEDIA)
+						.setUsage(VibrationAttributes.USAGE_TOUCH)
 						.build()
 					vibrator!!.vibrate(
 						VibrationEffect.createWaveform(
@@ -327,6 +338,7 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 				dialogContents = null
 		}
 
+	private var lastNetDataNum: Long = 0
 	private fun stateChanged(state: StreamState)
 	{
 		binding.progressBar.visibility = if(state == StreamStateConnecting) View.VISIBLE else View.GONE
@@ -347,6 +359,46 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 			{
 				if(dialogContents != StreamQuitDialog)
 				{
+					if(state.reasonString?.contains("AxiDecoded|") == true){
+						if(!binding.fpsText.isVisible){
+							return
+						}
+						val datas =state.reasonString.split("|")
+						val sb = StringBuilder()
+						if (TrafficStatsHelper.getPackageRxBytes(android.os.Process.myUid()).toInt() !== TrafficStats.UNSUPPORTED) {
+							val netData: Long =
+								TrafficStatsHelper.getPackageRxBytes(android.os.Process.myUid()) + TrafficStatsHelper.getPackageTxBytes(
+									android.os.Process.myUid()
+								)
+							if (lastNetDataNum != 0L) {
+								sb.append("带宽：")
+								val realtimeNetData: Float = (netData - lastNetDataNum) / 1024f
+								if (realtimeNetData >= 1000) {
+									sb.append(
+										String.format(
+											"%.2f",
+											realtimeNetData / 1024f
+										) + "M/s"
+									)
+								} else {
+									sb.append(String.format("%.2f", realtimeNetData) + "K/s")
+								}
+							}
+							lastNetDataNum = netData
+						}
+						sb.append("\t ")
+						sb.append(if (viewModel.session.connectInfo.ps5) "PS5" else "PS4")
+						sb.append("\t ")
+						sb.append(viewModel.session.connectInfo.videoProfile.width)
+						sb.append("x")
+						sb.append(viewModel.session.connectInfo.videoProfile.height)
+						sb.append(if (viewModel.session.connectInfo.videoProfile.codec==Codec.CODEC_H265_HDR) " HDR" else "")
+						sb.append("\t 解码："+datas[1])
+						sb.append("\t FPS："+datas[2])
+						binding.fpsText.text=sb.toString()
+						return
+					}
+
 					if(state.reason.isError)
 					{
 						dialog?.dismiss()
@@ -432,25 +484,35 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 	}
 
 	override fun onBackPressed() {
-		val dialog = MaterialAlertDialogBuilder(this)
-			.setMessage("是否退出此次串流？")
-			.setNeutralButton("切换图层"){ _, _ ->
-				dialog = null
-				if(binding.overlay.isVisible){
-					hideOverlay()
-				}else{
-					showOverlay()
+		val items = arrayOf("退出串流", "切换控件图层", "切换性能图层","取消")
+		val builder =  MaterialAlertDialogBuilder(this)
+			builder.setTitle("操作菜单")  // 设置对话框标题
+			.setItems(items) { dialog, which ->
+				// 用户选择的选项索引（which）
+				dialog.dismiss()
+				if(which==0){
+					super.onBackPressed()
+					return@setItems
+				}
+				if(which==1){
+					if(binding.overlay.isVisible){
+						hideOverlay()
+					}else{
+						showOverlay()
+					}
+					return@setItems
+				}
+				if(which==2){
+					if(binding.fpsText.isVisible){
+						binding.fpsText.visibility=View.GONE
+					}else{
+						binding.fpsText.visibility=View.VISIBLE
+					}
+					return@setItems
 				}
 			}
-			.setPositiveButton("确认") { _, _ ->
-				dialog = null
-				super.onBackPressed()
-			}
-			.setNegativeButton("取消") { _, _ ->
-				dialog = null
-			}
-			.create()
-		dialog.show()
+		builder.create().show()
+
 	}
 
 	private fun adjustTextureViewAspect(textureView: TextureView)

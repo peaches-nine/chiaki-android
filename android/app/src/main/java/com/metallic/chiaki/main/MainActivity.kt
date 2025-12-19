@@ -79,31 +79,6 @@ class MainActivity : AppCompatActivity()
 			discoveryMenuItem?.let { updateDiscoveryMenuItem(it, active) }
 			updateEmptyInfo()
 		})
-
-//		Toast.makeText(this,Preferences(this).touchPadKey,Toast.LENGTH_SHORT).show()
-
-
-//		var infoStr =""
-//		val deviceIds = InputDevice.getDeviceIds()
-//		deviceIds.forEach { deviceId ->
-//			InputDevice.getDevice(deviceId)?.apply {
-//				if (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-//					sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
-//				) {
-//					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//						if(sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!=null){
-//							infoStr+="\n加速器传感器："+sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER).name
-//						}
-//						if(sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)!=null){
-//							infoStr+="\n陀螺仪传感器："+sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE).name
-//						}
-//					}
-//					Log.i("getDevice",toString())
-//					infoStr+="\n"+toString()
-//				}
-//			}
-//		}
-//		binding.emptyInfoTextView.setText(infoStr)
 	}
 
 	private fun updateEmptyInfo()

@@ -117,4 +117,21 @@
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <TextView
+        android:id="@+id/fpsText"
+        tools:text="解码：109ms FPS：60"
+        android:textSize="10sp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/ic_hud_bg"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:paddingTop="1dp"
+        android:paddingBottom="2dp"
+        android:textColor="@android:color/white"
+        android:visibility="visible"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
 </FrameLayout>

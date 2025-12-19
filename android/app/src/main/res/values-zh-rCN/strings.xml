@@ -48,7 +48,7 @@
     <string name="display_hosts_empty_discovery_on_info">未添加或发现任何控制器</string>
     <string name="entered_host_invalid">请输入有效的主机名</string>
     <string name="hint_add_manual_regist_host">注册控制器</string>
-    <string name="hint_regist_host">主机</string>
+    <string name="hint_regist_host">主机IP</string>
     <string name="hint_regist_pin">PIN</string>
     <string name="hint_regist_psn_account_id">PSN 帐户 ID（8 位 base64）</string>
     <string name="hint_regist_psn_online_id">PSN 在线 ID（用户名，区分大小写）</string>
@@ -95,7 +95,7 @@
     <string name="preferences_resolution_title_540p">540p</string>
     <string name="preferences_resolution_title_720p">720p</string>
     <string name="preferences_rumble_enabled_key">rumble_enabled</string>
-    <string name="preferences_rumble_enabled_summary">使用手机振动马达发出反馈音效，仅限PS4游戏</string>
+    <string name="preferences_rumble_enabled_summary">开启游戏震动效果，支持PS4和PS5游戏。</string>
     <string name="preferences_rumble_enabled_title">震动反馈</string>
     <string name="preferences_swap_cross_moon_key">swap_cross_moon</string>
     <string name="preferences_swap_cross_moon_summary">如果默认映射不正确，则交换按钮（例如对于 8BitDo 控制器）</string>
@@ -116,8 +116,8 @@
 系统 → 远程游玩 →
 关联设备"</string>
     <string name="regist_pin_invalid">请输入有效的 %d 位 PIN 码</string>
-    <string name="regist_psn_account_id_help">关于获取你的帐户 ID，请参阅</string>
-    <string name="regist_psn_account_id_help_url">https://git.sr.ht/~thestr4ng3r/chiaki/tree/master/item/README.md#obtaining-your-psn-accountid</string>
+    <string name="regist_psn_account_id_help">关于获取你的帐户 ID，请查看视频简介</string>
+    <string name="regist_psn_account_id_help_url">https://www.bilibili.com/video/BV1EG4y1x7RH/</string>
     <string name="regist_psn_account_id_invalid">请输入有效的 8 位 Base64 帐户 ID</string>
     <string name="regist_psn_online_id_invalid">请输入有效的 PSN ID</string>
     <string name="registered_hosts_empty_info">没有注册控制器</string>
@@ -139,7 +139,12 @@
     <string name="preferences_rumble_gamepad_enabled_key">rumble_gamepad_enabled</string>
     <string name="preferences_screen_portrait_enabled_key">screen_portrait_enabled</string>
     <string name="preferences_screen_cutoutmode_enabled_key">screen_cutoutmode_enabled</string>
+    <string name="preferences_motion_vector_game_enabled_key">motion_vector_game_enabled</string>
+
+    <string name="preferences_motion_gamepad_enabled_key">motion_gamepad_enabled</string>
+
     <string name="preferences_about_axixi_key">about_axixi</string>
 
+    <string name="preferences_rumble_trigger_gamepad_enabled_key">rumble_trigger_gamepad_enabled</string>
 
 </resources>

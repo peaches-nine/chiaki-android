@@ -23,14 +23,25 @@
             app:key="@string/preferences_rumble_enabled_key"
             app:title="@string/preferences_rumble_enabled_title"
             app:summary="@string/preferences_rumble_enabled_summary"
+            android:defaultValue="true"
             app:icon="@drawable/ic_rumble" />
 
         <SwitchPreference
             android:dependency="@string/preferences_rumble_enabled_key"
             app:key="@string/preferences_rumble_gamepad_enabled_key"
-            app:title="使用手柄震动马达"
-            app:summary="如果手柄不支持震动则使用默认手机震动马达。
-            \n建议PS4游戏开启，PS5游戏关闭，使用系统输入法里面的重定向功能使手柄震动。"
+            app:title="使用手柄震动"
+            android:defaultValue="false"
+            app:summary="如果安卓内核不支持手柄震动则使用默认手机自身震动马达。
+            \n也可以关闭此选项，启用 安卓系统-设置-语言与输入法-振动重定向功能 使手柄震动。"
+            app:icon="@drawable/icon_virtual_controller" />
+
+        <SwitchPreference
+            android:dependency="@string/preferences_rumble_enabled_key"
+            app:key="@string/preferences_rumble_trigger_gamepad_enabled_key"
+            app:title="自适应扳机震动"
+            android:defaultValue="false"
+            app:summary="开启此选项，游戏中自适应扳机的震动效果会使用手柄握把处的震动马达来模拟，
+            \n若手柄不支持震动，则使用默认手机自身震动马达。"
             app:icon="@drawable/icon_virtual_controller" />
 
         <SwitchPreference
@@ -38,6 +49,13 @@
             app:title="@string/preferences_motion_enabled_title"
             app:summary="@string/preferences_motion_enabled_summary"
             app:icon="@drawable/ic_motion" />
+
+<!--        <SwitchPreference-->
+<!--            android:dependency="@string/preferences_motion_enabled_key"-->
+<!--            app:key="@string/preferences_motion_gamepad_enabled_key"-->
+<!--            app:title="使用手柄陀螺仪"-->
+<!--            app:summary="如果手柄不支持陀螺仪，还是会使用设备陀螺仪。"-->
+<!--            app:icon="@drawable/ic_motion" />-->
 
         <SwitchPreference
             android:defaultValue="false"
@@ -128,9 +146,16 @@
             app:icon="@drawable/icon_touch_key"
             />
 
+        <SwitchPreference
+            app:key="@string/preferences_motion_vector_game_enabled_key"
+            app:title="使用游戏旋转矢量传感器"
+            app:summary="如果你的安卓掌机，发现体感不适配，建议勾选此选项，比如Ayaneo EVO"
+            app:icon="@drawable/ic_motion" />
+
         <Preference
             app:key="@string/preferences_about_axixi_key"
             app:title="关于阿西西的日常"
+            app:summary="点击会跳转到作者B站个人空间"
             app:icon="@drawable/icon_about_ax"/>
 
     </PreferenceCategory>

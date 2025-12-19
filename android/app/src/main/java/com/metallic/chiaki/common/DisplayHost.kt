@@ -21,7 +21,7 @@ class DiscoveredDisplayHost(
 ): DisplayHost()
 {
 	override val host get() = discoveredHost.hostAddr ?: ""
-	override val name get() = discoveredHost.hostName ?: registeredHost?.serverNickname
+	override val name get() = registeredHost?.serverNickname ?:discoveredHost.hostName //优先显示昵称
 	override val id get() = discoveredHost.hostId ?: registeredHost?.serverMac?.toString()
 	override val isPS5 get() = discoveredHost.isPS5
 

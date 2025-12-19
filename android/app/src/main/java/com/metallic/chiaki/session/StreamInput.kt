@@ -1,11 +1,18 @@
 package com.metallic.chiaki.session
 
 import android.content.Context
-import android.hardware.*
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
-import android.os.Vibrator
+import android.os.Handler
 import android.util.Log
-import android.view.*
+import android.view.InputDevice
+import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.Surface
+import android.view.WindowManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -21,27 +28,33 @@ class StreamInput(val context: Context, val preferences: Preferences)
 	{
 		val controllerState = sensorControllerState or keyControllerState or motionControllerState
 
-		val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-		@Suppress("DEPRECATION")
-		when(windowManager.defaultDisplay.rotation)
-		{
-			Surface.ROTATION_90 -> {
-				controllerState.accelX *= -1.0f
-				controllerState.accelZ *= -1.0f
-				controllerState.gyroX *= -1.0f
-				controllerState.gyroZ *= -1.0f
-				controllerState.orientX *= -1.0f
-				controllerState.orientZ *= -1.0f
-			}
-			else -> {}
-		}
 
+		if(!preferences.motionGamePadEnabled){
+			val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+			@Suppress("DEPRECATION")
+			when(windowManager.defaultDisplay.rotation)
+			{
+				Surface.ROTATION_90 -> {
+					controllerState.accelX *= -1.0f
+					controllerState.accelZ *= -1.0f
+					controllerState.gyroX *= -1.0f
+					controllerState.gyroZ *= -1.0f
+					controllerState.orientX *= -1.0f
+					controllerState.orientZ *= -1.0f
+				}
+				else -> {}
+			}
+		}
 		// prioritize motion controller's l2 and r2 over key
 		// (some controllers send only key, others both but key earlier than full press)
 		if(motionControllerState.l2State > 0U)
 			controllerState.l2State = motionControllerState.l2State
 		if(motionControllerState.r2State > 0U)
 			controllerState.r2State = motionControllerState.r2State
+
+//		Log.i("axixi-sensor","accel:"+controllerState.accelX+","+controllerState.accelY+","+controllerState.accelZ
+//				+" | gyro:"+controllerState.gyroX+","+controllerState.gyroY+","+controllerState.gyroZ
+//		+ " | orient:"+controllerState.orientX+","+controllerState.orientY+","+controllerState.orientZ)
 
 		return controllerState or touchControllerState
 	}
@@ -57,6 +70,10 @@ class StreamInput(val context: Context, val preferences: Preferences)
 		}
 
 	private val swapCrossMoon = preferences.swapCrossMoon
+	private var gravity = FloatArray(3)
+	private var gyroscopeData = FloatArray(3)
+	private var rotationMatrix = FloatArray(9)
+	private val orientationValues = FloatArray(3)
 
 	private val sensorEventListener = object: SensorEventListener {
 		override fun onSensorChanged(event: SensorEvent)
@@ -64,19 +81,33 @@ class StreamInput(val context: Context, val preferences: Preferences)
 			when(event.sensor.type)
 			{
 				Sensor.TYPE_ACCELEROMETER -> {
-					sensorControllerState.accelX = event.values[1] / SensorManager.GRAVITY_EARTH
-					sensorControllerState.accelY = event.values[2] / SensorManager.GRAVITY_EARTH
-					sensorControllerState.accelZ = event.values[0] / SensorManager.GRAVITY_EARTH
+					if(preferences.motionGamePadEnabled){
+						sensorControllerState.accelX = event.values[0] / SensorManager.GRAVITY_EARTH
+						sensorControllerState.accelY = event.values[1] / SensorManager.GRAVITY_EARTH
+						sensorControllerState.accelZ = event.values[2] / SensorManager.GRAVITY_EARTH
+						val alpha = 0.8f
+						gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0]
+						gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1]
+						gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2]
+					}else{
+						sensorControllerState.accelX = event.values[1] / SensorManager.GRAVITY_EARTH
+						sensorControllerState.accelY = event.values[2] / SensorManager.GRAVITY_EARTH
+						sensorControllerState.accelZ = event.values[0] / SensorManager.GRAVITY_EARTH
+					}
 				}
 				Sensor.TYPE_GYROSCOPE -> {
-//					Log.i("sensorEventListener", "0->"+event.values[0].toString())
-//					Log.i("sensorEventListener", "1->"+event.values[1].toString())
-//					Log.i("sensorEventListener", "2->"+event.values[2].toString())
-					sensorControllerState.gyroX = event.values[1]
-					sensorControllerState.gyroY = event.values[2]
-					sensorControllerState.gyroZ = event.values[0]
+					if(preferences.motionGamePadEnabled){
+						sensorControllerState.gyroX = event.values[0]
+						sensorControllerState.gyroY = event.values[1]
+						sensorControllerState.gyroZ = event.values[2]
+						gyroscopeData=event.values.clone()
+					}else{
+						sensorControllerState.gyroX = event.values[1]
+						sensorControllerState.gyroY = event.values[2]
+						sensorControllerState.gyroZ = event.values[0]
+					}
 				}
-				Sensor.TYPE_ROTATION_VECTOR -> {
+				Sensor.TYPE_ROTATION_VECTOR,Sensor.TYPE_GAME_ROTATION_VECTOR -> {
 					val q = floatArrayOf(0f, 0f, 0f, 0f)
 					SensorManager.getQuaternionFromVector(q, event.values)
 					sensorControllerState.orientX = q[2]
@@ -86,12 +117,44 @@ class StreamInput(val context: Context, val preferences: Preferences)
 				}
 				else -> return
 			}
+			// 当加速度计数据不为空时，更新旋转矩阵
+			if (preferences.motionGamePadEnabled) {
+				// 计算旋转矩阵
+				SensorManager.getRotationMatrix(rotationMatrix, null, gravity, gyroscopeData)
+				SensorManager.getOrientation(rotationMatrix, orientationValues)
+				val q = floatArrayOf(0f, 0f, 0f, 0f)
+				// 将旋转矩阵转换为四元数
+				rotationMatrixToQuaternion(rotationMatrix, q)
+				sensorControllerState.orientX = q[1]
+				sensorControllerState.orientY = q[2]
+				sensorControllerState.orientZ = q[3]
+				sensorControllerState.orientW = q[0]
+				Log.i("axixi-sensor","orient:"+controllerState.orientX+","+controllerState.orientY+","+controllerState.orientZ+","+controllerState.orientW)
+			}
+
 			controllerStateUpdated()
 		}
 
 		override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
 	}
 
+
+	// Function to convert rotation matrix to quaternion
+	private fun rotationMatrixToQuaternion(matrix: FloatArray, quaternion: FloatArray) {
+		if (matrix.size == 9) {
+			quaternion[0] = Math.sqrt((1.0 + matrix[0] + matrix[4] + matrix[8])).toFloat() / 2
+			val w4 = 4.0 * quaternion[0]
+			quaternion[1] = ((matrix[7] - matrix[5]) / w4).toFloat()
+			quaternion[2] = ((matrix[2] - matrix[6]) / w4).toFloat()
+			quaternion[3] = ((matrix[3] - matrix[1]) / w4).toFloat()
+		} else if (matrix.size == 16) {
+			quaternion[0] = Math.sqrt((1.0 + matrix[0] + matrix[5] + matrix[10])).toFloat() / 2
+			val w4 = 4.0 * quaternion[0]
+			quaternion[1] = ((matrix[9] - matrix[6]) / w4).toFloat()
+			quaternion[2] = ((matrix[2] - matrix[8]) / w4).toFloat()
+			quaternion[3] = ((matrix[4] - matrix[1]) / w4).toFloat()
+		}
+	}
 
 
 	private lateinit var sensorManagerA :SensorManager
@@ -102,27 +165,34 @@ class StreamInput(val context: Context, val preferences: Preferences)
 		{
 			sensorManagerA = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
-//			val deviceIds = InputDevice.getDeviceIds()
-//			deviceIds.forEach { deviceId ->
-//				InputDevice.getDevice(deviceId)?.apply {
-//					val hasJoyMotion = getMotionRange(MotionEvent.AXIS_X) != null && getMotionRange(MotionEvent.AXIS_Y) != null
-//					if (hasJoyMotion&&(sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-//								sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)) {
-//						//android 12
-//						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//							sensorManagerA=this.sensorManager
-//						}
-//						return@forEach
-//					}
-//				}
-//			}
-
+			if(preferences.motionGamePadEnabled){
+				val deviceIds = InputDevice.getDeviceIds()
+				deviceIds.forEach { deviceId ->
+					InputDevice.getDevice(deviceId)?.apply {
+						val hasJoyMotion = getMotionRange(MotionEvent.AXIS_X) != null && getMotionRange(MotionEvent.AXIS_Y) != null
+						if (hasJoyMotion&&sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) {
+							//android 12
+							if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+								if(this.sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)!=null
+									&&this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!=null){
+									sensorManagerA=this.sensorManager
+								}
+							}
+							return@forEach
+						}
+					}
+				}
+			}
 			val samplingPeriodUs = 4000
 
 			listOfNotNull(
 				sensorManagerA.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 				sensorManagerA.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-				sensorManagerA.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+				if(preferences.motionGameVectorEnabled){
+					sensorManagerA.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
+				} else {
+					sensorManagerA.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+				}
 			).forEach {
 				sensorManagerA.registerListener(sensorEventListener, it, samplingPeriodUs)
 			}
@@ -205,6 +275,23 @@ class StreamInput(val context: Context, val preferences: Preferences)
 
 	fun onGenericMotionEvent(event: MotionEvent): Boolean
 	{
+//		if(preferences.touchMouseEnabled&&(event.source and InputDevice.SOURCE_MOUSE == InputDevice.SOURCE_MOUSE)){
+////			Log.i("axixi","类型："+event.action)
+//			if(event.action==MotionEvent.ACTION_HOVER_ENTER||event.action==MotionEvent.ACTION_HOVER_MOVE){
+//				keyControllerState.buttons=keyControllerState.buttons.run {
+//					this or ControllerState.BUTTON_TOUCHPAD
+//				}
+//				controllerStateUpdated()
+//				Handler().postDelayed({
+//					keyControllerState.buttons=keyControllerState.buttons.run {
+//						this and ControllerState.BUTTON_TOUCHPAD.inv()
+//					}
+//					controllerStateUpdated()
+//				}, 100)
+//
+//			}
+//			return true
+//		}
 		if(event.source and InputDevice.SOURCE_CLASS_JOYSTICK != InputDevice.SOURCE_CLASS_JOYSTICK)
 			return false
 		fun Float.signedAxis() = (this * Short.MAX_VALUE).toInt().toShort()

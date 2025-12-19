@@ -34,7 +34,7 @@
     <string name="regist_option_ps4_ge_8">PS4 ≥ 8.0</string>
     <string name="regist_option_ps5">PS5</string>
     <string name="regist_psn_account_id_help">About obtaining your Account ID, see</string>
-    <string name="regist_psn_account_id_help_url">https://git.sr.ht/~thestr4ng3r/chiaki/tree/master/item/README.md#obtaining-your-psn-accountid</string>
+    <string name="regist_psn_account_id_help_url">https://www.bilibili.com/video/BV1EG4y1x7RH/</string>
     <string name="hint_regist_psn_online_id">PSN Online ID (username, case-sensitive)</string>
     <string name="hint_regist_psn_account_id">PSN Account ID (8 bytes, base64)</string>
     <string name="hint_regist_pin">PIN</string>
@@ -90,7 +90,7 @@
     <string name="preferences_swap_cross_moon_title">Swap Cross/Moon and Box/Pyramid Buttons</string>
     <string name="preferences_swap_cross_moon_summary">Swap face buttons if default mapping is incorrect (e.g. for 8BitDo controllers)</string>
     <string name="preferences_rumble_enabled_title">Rumble</string>
-    <string name="preferences_rumble_enabled_summary">Use phone vibration motor for rumble</string>
+    <string name="preferences_rumble_enabled_summary">Turn on the game vibration effect and support PS4 and PS5 games.</string>
     <string name="preferences_motion_enabled_title">Motion</string>
     <string name="preferences_motion_enabled_summary">Use device\'s motion sensors for controller motion</string>
     <string name="preferences_button_haptic_enabled_title">Touch Haptics</string>
@@ -123,7 +123,12 @@
     <string name="preferences_rumble_gamepad_enabled_key">rumble_gamepad_enabled</string>
     <string name="preferences_screen_portrait_enabled_key">screen_portrait_enabled</string>
     <string name="preferences_screen_cutoutmode_enabled_key">screen_cutoutmode_enabled</string>
+    <string name="preferences_motion_vector_game_enabled_key">motion_vector_game_enabled</string>
+
+    <string name="preferences_motion_gamepad_enabled_key">motion_gamepad_enabled</string>
+
     <string name="preferences_about_axixi_key">about_axixi</string>
+    <string name="preferences_rumble_trigger_gamepad_enabled_key">rumble_trigger_gamepad_enabled</string>
 
 
     <string name="preferences_touch_key_enabled_key">touch_key_value</string>

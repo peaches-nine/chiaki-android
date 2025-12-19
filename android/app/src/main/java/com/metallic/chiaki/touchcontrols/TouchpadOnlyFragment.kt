@@ -24,6 +24,9 @@ class TouchpadOnlyFragment : TouchControlsFragment()
 			controllerStateProxy.onNext(
 				combineLatest(ownControllerStateSubject, binding.touchpadView.controllerState) { a, b -> a or b }
 			)
+			controllerStateProxy.onNext(
+				combineLatest(ownControllerStateSubject, binding.touchpadView2.controllerState) { a, b -> a or b }
+			)
 			it.root
 		}
 

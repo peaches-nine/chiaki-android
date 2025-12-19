@@ -84,6 +84,11 @@ class Preferences(context: Context)
 		get() = sharedPreferences.getBoolean(rumbleGamePadEnableKey, false)
 		set(value) { sharedPreferences.edit().putBoolean(rumbleGamePadEnableKey, value).apply() }
 
+	val rumbleTriggerGamePadEnableKey get() = resources.getString(R.string.preferences_rumble_trigger_gamepad_enabled_key)
+	var rumbleTriggerGamePadEnabled
+		get() = sharedPreferences.getBoolean(rumbleTriggerGamePadEnableKey, false)
+		set(value) { sharedPreferences.edit().putBoolean(rumbleTriggerGamePadEnableKey, value).apply() }
+
 	val screenPortraitEnabledKey get() = resources.getString(R.string.preferences_screen_portrait_enabled_key)
 	var screenPortraitEnabled
 		get() = sharedPreferences.getBoolean(screenPortraitEnabledKey, false)
@@ -98,6 +103,16 @@ class Preferences(context: Context)
 	var motionEnabled
 		get() = sharedPreferences.getBoolean(motionEnabledKey, true)
 		set(value) { sharedPreferences.edit().putBoolean(motionEnabledKey, value).apply() }
+
+	val motionGamePadEnabledKey get() = resources.getString(R.string.preferences_motion_gamepad_enabled_key)
+	var motionGamePadEnabled
+		get() = sharedPreferences.getBoolean(motionGamePadEnabledKey, false)
+		set(value) { sharedPreferences.edit().putBoolean(motionGamePadEnabledKey, value).apply() }
+
+	val motionGameVectorEnabledKey get() = resources.getString(R.string.preferences_motion_vector_game_enabled_key)
+	var motionGameVectorEnabled
+		get() = sharedPreferences.getBoolean(motionGameVectorEnabledKey, false)
+		set(value) { sharedPreferences.edit().putBoolean(motionGameVectorEnabledKey, value).apply() }
 
 	val buttonHapticEnabledKey get() = resources.getString(R.string.preferences_button_haptic_enabled_key)
 	var buttonHapticEnabled

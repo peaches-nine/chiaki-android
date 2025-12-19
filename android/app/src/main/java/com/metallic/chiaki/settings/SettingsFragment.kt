@@ -26,7 +26,10 @@ class DataStore(val preferences: Preferences) : PreferenceDataStore() {
         preferences.swapCrossMoonKey -> preferences.swapCrossMoon
         preferences.rumbleEnabledKey -> preferences.rumbleEnabled
         preferences.rumbleGamePadEnableKey -> preferences.rumbleGamePadEnabled
+        preferences.rumbleTriggerGamePadEnableKey -> preferences.rumbleTriggerGamePadEnabled
         preferences.motionEnabledKey -> preferences.motionEnabled
+        preferences.motionGamePadEnabledKey -> preferences.motionGamePadEnabled
+        preferences.motionGameVectorEnabledKey -> preferences.motionGameVectorEnabled
         preferences.touchpadOnlyEnabledKey -> preferences.touchpadOnlyEnabled
         preferences.onScreenControlsEnabledKey -> preferences.onScreenControlsEnabled
         preferences.buttonHapticEnabledKey -> preferences.buttonHapticEnabled
@@ -41,7 +44,11 @@ class DataStore(val preferences: Preferences) : PreferenceDataStore() {
             preferences.swapCrossMoonKey -> preferences.swapCrossMoon = value
             preferences.rumbleEnabledKey -> preferences.rumbleEnabled = value
             preferences.rumbleGamePadEnableKey -> preferences.rumbleGamePadEnabled = value
+            preferences.rumbleTriggerGamePadEnableKey -> preferences.rumbleTriggerGamePadEnabled = value
+
             preferences.motionEnabledKey -> preferences.motionEnabled = value
+            preferences.motionGamePadEnabledKey -> preferences.motionGamePadEnabled = value
+            preferences.motionGameVectorEnabledKey -> preferences.motionGameVectorEnabled = value
             preferences.touchpadOnlyEnabledKey -> preferences.touchpadOnlyEnabled = value
             preferences.onScreenControlsEnabledKey -> preferences.onScreenControlsEnabled = value
             preferences.buttonHapticEnabledKey -> preferences.buttonHapticEnabled = value

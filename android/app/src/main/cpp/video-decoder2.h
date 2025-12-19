@@ -7,27 +7,27 @@
 
 #include <chiaki/thread.h>
 #include <chiaki/log.h>
-#include <chiaki/session.h>
+
 typedef struct AMediaCodec AMediaCodec;
 typedef struct ANativeWindow ANativeWindow;
 
 typedef struct android_chiaki_video_decoder_t
 {
-	ChiakiLog *log;
-	ChiakiMutex codec_mutex;
-	AMediaCodec *codec;
-	ANativeWindow *window;
-	uint64_t timestamp_cur;
-	ChiakiThread output_thread;
-	bool shutdown_output;
-	int32_t target_width;
-	int32_t target_height;
-	ChiakiCodec target_codec;
+    ChiakiLog *log;
+    ChiakiMutex codec_mutex;
+    AMediaCodec *codec;
+    ANativeWindow *window;
+    uint64_t timestamp_cur;
+    ChiakiThread output_thread;
+    bool shutdown_output;
+    int32_t target_width;
+    int32_t target_height;
+    ChiakiCodec target_codec;
 } AndroidChiakiVideoDecoder;
 
 ChiakiErrorCode android_chiaki_video_decoder_init(AndroidChiakiVideoDecoder *decoder, ChiakiLog *log, int32_t target_width, int32_t target_height, ChiakiCodec codec);
 void android_chiaki_video_decoder_fini(AndroidChiakiVideoDecoder *decoder);
-void android_chiaki_video_decoder_set_surface(ChiakiSession *session,AndroidChiakiVideoDecoder *decoder, JNIEnv *env, jobject surface);
+void android_chiaki_video_decoder_set_surface(AndroidChiakiVideoDecoder *decoder, JNIEnv *env, jobject surface);
 bool android_chiaki_video_decoder_video_sample(uint8_t *buf, size_t buf_size, void *user);
 
 #endif
