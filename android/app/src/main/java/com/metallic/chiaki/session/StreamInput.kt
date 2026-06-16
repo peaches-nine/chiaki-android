@@ -24,6 +24,10 @@ class StreamInput(val context: Context, val preferences: Preferences)
 {
 	var controllerStateChangedCallback: ((ControllerState) -> Unit)? = null
 
+	// When true, external controller (DualSenseDriver) is providing input.
+	// Skip phone sensors and virtual controller to avoid conflicts.
+	var externalControllerActive: Boolean = false
+
 	val controllerState: ControllerState get()
 	{
 		val controllerState = sensorControllerState or keyControllerState or motionControllerState
@@ -214,6 +218,7 @@ class StreamInput(val context: Context, val preferences: Preferences)
 
 	private fun controllerStateUpdated()
 	{
+		if (externalControllerActive) return
 		controllerStateChangedCallback?.let { it(controllerState) }
 	}
 

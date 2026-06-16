@@ -316,7 +316,30 @@ sealed class Event
 object ConnectedEvent: Event()
 data class LoginPinRequestEvent(val pinIncorrect: Boolean): Event()
 data class QuitEvent(val reason: QuitReason, val reasonString: String?): Event()
-data class RumbleEvent(val left: UByte, val right: UByte,val  type:UByte): Event()
+data class RumbleEvent(val left: UByte, val right: UByte): Event()
+data class TriggerEffectsEvent(
+    val typeLeft: UByte,
+    val typeRight: UByte,
+    val dataLeft: ByteArray,
+    val dataRight: ByteArray
+): Event() {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as TriggerEffectsEvent
+        return typeLeft == other.typeLeft &&
+            typeRight == other.typeRight &&
+            dataLeft.contentEquals(other.dataLeft) &&
+            dataRight.contentEquals(other.dataRight)
+    }
+    override fun hashCode(): Int {
+        var result = typeLeft.hashCode()
+        result = 31 * result + typeRight.hashCode()
+        result = 31 * result + dataLeft.contentHashCode()
+        result = 31 * result + dataRight.contentHashCode()
+        return result
+    }
+}
 
 class CreateError(val errorCode: ErrorCode): Exception("Failed to create a native object: $errorCode")
 
@@ -374,12 +397,12 @@ class Session(connectInfo: ConnectInfo, logFile: String?, logVerbose: Boolean)
 
 	private fun eventRumble(left: Int, right: Int)
 	{
-		event(RumbleEvent(left.toUByte(), right.toUByte(),0U))
+		event(RumbleEvent(left.toUByte(), right.toUByte()))
 	}
 
-	private fun eventRumbleTigger(type_left: Int, type_right: Int,left: Int, right: Int)
+	private fun eventRumbleTigger(type_left: Int, type_right: Int, left: ByteArray, right: ByteArray)
 	{
-		event(RumbleEvent(left.toUByte(), right.toUByte(),1U))
+		event(TriggerEffectsEvent(type_left.toUByte(), type_right.toUByte(), left, right))
 	}
 
 	fun setSurface(surface: Surface?)

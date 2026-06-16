@@ -205,14 +205,22 @@ static void android_chiaki_event_cb(ChiakiEvent *event, void *user)
 							  (jint)event->rumble.right);
 			break;
         case CHIAKI_EVENT_TRIGGER_EFFECTS:
-            E->CallVoidMethod(env, session->java_session,
-                              session->java_session_event_rumble_tigger_meth,
-                              (jint)event->trigger_effects.type_left,
-                              (jint)event->trigger_effects.type_right,
-                              (jint)event->trigger_effects.left,
-                              (jint)event->trigger_effects.right);
-            CHIAKI_LOGI(&global_log, "axixiLog-扳机震动");
-            break;
+{
+    jbyteArray left_arr = E->NewByteArray(env, 10);
+    jbyteArray right_arr = E->NewByteArray(env, 10);
+    E->SetByteArrayRegion(env, left_arr, 0, 10, (const jbyte *)event->trigger_effects.left);
+    E->SetByteArrayRegion(env, right_arr, 0, 10, (const jbyte *)event->trigger_effects.right);
+    E->CallVoidMethod(env, session->java_session,
+                      session->java_session_event_rumble_tigger_meth,
+                      (jint)event->trigger_effects.type_left,
+                      (jint)event->trigger_effects.type_right,
+                      left_arr,
+                      right_arr);
+    E->DeleteLocalRef(env, left_arr);
+    E->DeleteLocalRef(env, right_arr);
+    CHIAKI_LOGI(&global_log, "axixiLog-扳机震动");
+    break;
+}
 		default:
 			break;
 	}
@@ -335,7 +343,7 @@ JNIEXPORT void JNICALL JNI_FCN(sessionCreate)(JNIEnv *env, jobject obj, jobject 
 	session->java_session_event_login_pin_request_meth = E->GetMethodID(env, session->java_session_class, "eventLoginPinRequest", "(Z)V");
 	session->java_session_event_quit_meth = E->GetMethodID(env, session->java_session_class, "eventQuit", "(ILjava/lang/String;)V");
 	session->java_session_event_rumble_meth = E->GetMethodID(env, session->java_session_class, "eventRumble", "(II)V");
-    session->java_session_event_rumble_tigger_meth = E->GetMethodID(env, session->java_session_class, "eventRumbleTigger", "(IIII)V");
+    session->java_session_event_rumble_tigger_meth = E->GetMethodID(env, session->java_session_class, "eventRumbleTigger", "(II[B[B)V");
 
 	jclass controller_state_class = E->FindClass(env, BASE_PACKAGE"/ControllerState");
 	session->java_controller_state_buttons = E->GetFieldID(env, controller_state_class, "buttons", "I");

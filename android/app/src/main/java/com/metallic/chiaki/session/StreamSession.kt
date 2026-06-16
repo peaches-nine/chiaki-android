@@ -21,12 +21,16 @@ data class StreamStateLoginPinRequest(val pinIncorrect: Boolean): StreamState()
 class StreamSession(val connectInfo: ConnectInfo, val logManager: LogManager, val logVerbose: Boolean, val input: StreamInput)
 {
 	var session: Session? = null
-		private set
+		internal set
 
 	private val _state = MutableLiveData<StreamState>(StreamStateIdle)
 	val state: LiveData<StreamState> get() = _state
-	private val _rumbleState = MutableLiveData<RumbleEvent>(RumbleEvent(0U, 0U,0U))
+	private val _rumbleState = MutableLiveData<RumbleEvent>(RumbleEvent(0U, 0U))
 	val rumbleState: LiveData<RumbleEvent> get() = _rumbleState
+
+	// Callbacks for DualSenseDriver - bypass LiveData for lower latency
+	var rumbleCallback: ((RumbleEvent) -> Unit)? = null
+	var triggerEffectsCallback: ((TriggerEffectsEvent) -> Unit)? = null
 
 	private var surfaceTexture: SurfaceTexture? = null
 	private var surface: Surface? = null
@@ -44,7 +48,6 @@ class StreamSession(val connectInfo: ConnectInfo, val logManager: LogManager, va
 		session?.dispose()
 		session = null
 		_state.value = StreamStateIdle
-		//surfaceTexture?.release()
 	}
 
 	fun pause()
@@ -90,7 +93,13 @@ class StreamSession(val connectInfo: ConnectInfo, val logManager: LogManager, va
 					event.pinIncorrect
 				)
 			)
-			is RumbleEvent -> _rumbleState.postValue(event)
+			is RumbleEvent -> {
+				_rumbleState.postValue(event)
+				rumbleCallback?.invoke(event)
+			}
+			is TriggerEffectsEvent -> {
+				triggerEffectsCallback?.invoke(event)
+			}
 		}
 	}
 
@@ -128,7 +137,6 @@ class StreamSession(val connectInfo: ConnectInfo, val logManager: LogManager, va
 
 			override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean
 			{
-				// return false if we want to keep the surface texture
 				return surfaceTexture == null
 			}
 

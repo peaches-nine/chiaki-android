@@ -5,8 +5,14 @@ package com.metallic.chiaki.stream
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.app.AlertDialog
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.graphics.Matrix
+import android.hardware.usb.UsbManager
 import android.media.AudioAttributes
 import android.net.TrafficStats
 import android.os.Build
@@ -39,6 +45,9 @@ import com.metallic.chiaki.databinding.ActivityStreamBinding
 import com.metallic.chiaki.lib.Codec
 import com.metallic.chiaki.lib.ConnectInfo
 import com.metallic.chiaki.lib.ConnectVideoProfile
+import com.metallic.chiaki.lib.DualSenseDriver
+import com.metallic.chiaki.lib.RumbleEvent
+import com.metallic.chiaki.lib.TriggerEffectsEvent
 import com.metallic.chiaki.session.StreamState
 import com.metallic.chiaki.session.StreamStateConnected
 import com.metallic.chiaki.session.StreamStateConnecting
@@ -63,12 +72,27 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 	{
 		const val EXTRA_CONNECT_INFO = "connect_info"
 		private const val HIDE_UI_TIMEOUT_MS = 2000L
+		private const val ACTION_USB_PERMISSION = "com.metallic.chiaki.USB_PERMISSION"
 	}
 
 	private lateinit var viewModel: StreamViewModel
 	private lateinit var binding: ActivityStreamBinding
 
 	private val uiVisibilityHandler = Handler()
+
+	private var dualSenseDriver: DualSenseDriver? = null
+
+	private val usbReceiver = object : BroadcastReceiver() {
+		override fun onReceive(ctx: Context, intent: Intent) {
+			if (ACTION_USB_PERMISSION == intent.action) {
+				synchronized(this) {
+					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+						initDualSense()
+					}
+				}
+			}
+		}
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
@@ -154,20 +178,32 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		viewModel.session.state.observe(this, Observer { this.stateChanged(it) })
 		adjustStreamViewAspect()
 
+		// Register USB permission receiver for DS5Dongle
+		registerReceiver(usbReceiver, IntentFilter(ACTION_USB_PERMISSION))
+
+		// Wire DualSense feedback callbacks (bypass LiveData for lower latency)
+		viewModel.session.rumbleCallback = { event ->
+			dualSenseDriver?.sendRumble(event.left, event.right)
+		}
+		viewModel.session.triggerEffectsCallback = { event ->
+			dualSenseDriver?.sendTriggerEffects(
+				event.typeLeft, event.dataLeft,
+				event.typeRight, event.dataRight)
+		}
+
+		// Try to init DS5Dongle if plugged in
+		initDualSense()
+
 		var vibrator:Vibrator ?=null
 
-		//震动反馈
+		//震动反馈 (phone vibrator fallback when DS5Dongle not connected)
 		if(Preferences(this).rumbleEnabled)
 		{
 			viewModel.session.rumbleState.observe(this, Observer {
+				// If DualSenseDriver is active, skip phone vibrator - it handles rumble directly
+				if (dualSenseDriver?.active == true)
+					return@Observer
 
-				//自适应扳机震动
-				if(it.type.toInt().toUInt() ==1U){
-					//没启用则忽略
-					if(!Preferences(this).rumbleTriggerGamePadEnabled){
-						return@Observer
-					}
-				}
 				//手柄震动马达
 				if(Preferences(this).rumbleGamePadEnabled){
 					val deviceIds = InputDevice.getDeviceIds()
@@ -264,6 +300,8 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 	{
 		super.onDestroy()
 		controlsDisposable.dispose()
+		dualSenseDriver?.stop()
+		try { unregisterReceiver(usbReceiver) } catch (_: Exception) {}
 	}
 
 	private fun reconnect()
@@ -540,6 +578,42 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		return viewModel.input.dispatchKeyEvent(event) || super.dispatchKeyEvent(event)
 	}
 	override fun onGenericMotionEvent(event: MotionEvent) = viewModel.input.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
+
+	private fun initDualSense() {
+		val driver = DualSenseDriver(
+			context = this,
+			onInputChanged = { state ->
+				viewModel.session.session?.setControllerState(state)
+			},
+			onDeviceStatusChanged = { connected ->
+				// When DS5Dongle is active, disable phone sensors & virtual controller
+				// to avoid conflicting input with real controller data
+				if (connected) {
+					viewModel.input.externalControllerActive = true
+					viewModel.setOnScreenControlsEnabled(false)
+				} else {
+					viewModel.input.externalControllerActive = false
+				}
+			}
+		)
+
+		val dev = driver.findDevice()
+		if (dev != null) {
+			val usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
+			if (usbManager.hasPermission(dev)) {
+				if (driver.start(dev)) {
+					dualSenseDriver = driver
+				}
+			} else {
+				val pi = PendingIntent.getBroadcast(
+					this, 0, Intent(ACTION_USB_PERMISSION),
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE
+					else PendingIntent.FLAG_UPDATE_CURRENT
+				)
+				usbManager.requestPermission(dev, pi)
+			}
+		}
+	}
 }
 
 enum class TransformMode
