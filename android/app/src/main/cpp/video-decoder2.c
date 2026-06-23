@@ -101,6 +101,9 @@ void android_chiaki_video_decoder_set_surface(AndroidChiakiVideoDecoder *decoder
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, decoder->target_width);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_HEIGHT, decoder->target_height);
+	// Let the decoder allocate enough internal buffer for bitrate spikes
+	AMediaFormat_setInt32(format, "operating-rate", 120);
+	AMediaFormat_setInt32(format, "priority", 0);
 
     media_status_t r = AMediaCodec_configure(decoder->codec, format, decoder->window, NULL, 0);
     if(r != AMEDIA_OK)
