@@ -48,6 +48,10 @@ import com.metallic.chiaki.lib.ConnectVideoProfile
 import com.metallic.chiaki.lib.DualSenseDriver
 import com.metallic.chiaki.lib.RumbleEvent
 import com.metallic.chiaki.lib.TriggerEffectsEvent
+import com.metallic.chiaki.fsr.FsrVideoProcessor
+import com.metallic.chiaki.fsr.NisVideoProcessor
+import com.metallic.chiaki.fsr.VideoProcessingGLSurfaceView
+import com.metallic.chiaki.lib.VideoUpscaler
 import com.metallic.chiaki.session.StreamState
 import com.metallic.chiaki.session.StreamStateConnected
 import com.metallic.chiaki.session.StreamStateConnecting
@@ -56,8 +60,6 @@ import com.metallic.chiaki.session.StreamStateLoginPinRequest
 import com.metallic.chiaki.session.StreamStateQuit
 import com.metallic.chiaki.touchcontrols.TouchControlsFragment
 import com.metallic.chiaki.touchcontrols.TouchpadOnlyFragment
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.addTo
 import kotlin.math.min
 
 
@@ -81,6 +83,12 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 	private val uiVisibilityHandler = Handler()
 
 	private var dualSenseDriver: DualSenseDriver? = null
+
+	// Upscaler
+	private var upscalerView: VideoProcessingGLSurfaceView? = null
+	private var fsrProcessor: FsrVideoProcessor? = null
+	private var nisProcessor: NisVideoProcessor? = null
+	private var upscalerType: VideoUpscaler = VideoUpscaler.OFF
 
 	private val usbReceiver = object : BroadcastReceiver() {
 		override fun onReceive(ctx: Context, intent: Intent) {
@@ -173,7 +181,19 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		}
 
 		//viewModel.session.attachToTextureView(textureView)
-		viewModel.session.attachToSurfaceView(binding.surfaceView)
+		setupUpscaler()
+		if (upscalerView != null) {
+			// Insert upscaler GL view into layout
+			val params = FrameLayout.LayoutParams(
+				FrameLayout.LayoutParams.MATCH_PARENT,
+				FrameLayout.LayoutParams.MATCH_PARENT)
+			binding.mainStreamLayout.addView(upscalerView, 0, params)
+			upscalerView?.setDesiredAspectRatio(
+				viewModel.session.connectInfo.videoProfile.width.toDouble() /
+				viewModel.session.connectInfo.videoProfile.height.toDouble())
+		} else {
+			viewModel.session.attachToSurfaceView(binding.surfaceView)
+		}
 
 		viewModel.session.state.observe(this, Observer { this.stateChanged(it) })
 		adjustStreamViewAspect()
@@ -267,16 +287,14 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 		}
 	}
 
-	private val controlsDisposable = CompositeDisposable()
-
 	override fun onAttachFragment(fragment: Fragment)
 	{
 		super.onAttachFragment(fragment)
 		if(fragment is TouchControlsFragment)
 		{
-			fragment.controllerState
-				.subscribe { viewModel.input.touchControllerState = it }
-				.addTo(controlsDisposable)
+			fragment.controllerStateCallback = { state ->
+				viewModel.input.touchControllerState = state
+			}
 			fragment.onScreenControlsEnabled = viewModel.onScreenControlsEnabled
 			if(fragment is TouchpadOnlyFragment)
 				fragment.touchpadOnlyEnabled = viewModel.touchpadOnlyEnabled
@@ -299,8 +317,9 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 	override fun onDestroy()
 	{
 		super.onDestroy()
-		controlsDisposable.dispose()
 		dualSenseDriver?.stop()
+		fsrProcessor?.release()
+		nisProcessor?.release()
 		try { unregisterReceiver(usbReceiver) } catch (_: Exception) {}
 	}
 
@@ -574,10 +593,47 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 
 	private fun adjustStreamViewAspect() = adjustSurfaceViewAspect()
 
-	override fun dispatchKeyEvent(event: KeyEvent):Boolean{
+	override fun dispatchKeyEvent(event: KeyEvent): Boolean {
 		return viewModel.input.dispatchKeyEvent(event) || super.dispatchKeyEvent(event)
 	}
-	override fun onGenericMotionEvent(event: MotionEvent) = viewModel.input.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
+	override fun onGenericMotionEvent(event: MotionEvent) =
+		viewModel.input.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
+
+	private fun setupUpscaler() {
+		val prefs = Preferences(this)
+		val typeKey = prefs.upscaler
+		upscalerType = VideoUpscaler.fromKey(typeKey)
+
+		if (upscalerType == VideoUpscaler.OFF) return
+
+		val processor: VideoProcessingGLSurfaceView.VideoProcessor = when (upscalerType) {
+			VideoUpscaler.FSR1 -> {
+				val fp = FsrVideoProcessor(this)
+				fp.setFsrEnabled(true)
+				fp.setSharpness(prefs.upscalerSharpness / 100.0f * 2.0f) // 0-100 → 0-2
+				fsrProcessor = fp
+				fp
+			}
+			VideoUpscaler.NIS -> {
+				val np = NisVideoProcessor(this)
+				np.setEnabled(true)
+				np.setSharpness(prefs.upscalerSharpness / 100.0f)
+				nisProcessor = np
+				np
+			}
+			VideoUpscaler.OFF -> return
+		}
+
+		upscalerView = VideoProcessingGLSurfaceView(this, false, false, processor,
+			object : VideoProcessingGLSurfaceView.SurfaceListener {
+				override fun onInputSurfaceAvailable(surfaceTexture: android.graphics.SurfaceTexture) {
+					viewModel.session.session?.setSurface(android.view.Surface(surfaceTexture))
+				}
+				override fun onInputSurfaceDestroyed() {
+					viewModel.session.session?.setSurface(null)
+				}
+			})
+	}
 
 	private fun initDualSense() {
 		val driver = DualSenseDriver(
@@ -586,8 +642,6 @@ class StreamActivity : AppCompatActivity(), View.OnSystemUiVisibilityChangeListe
 				viewModel.session.session?.setControllerState(state)
 			},
 			onDeviceStatusChanged = { connected ->
-				// When DS5Dongle is active, disable phone sensors & virtual controller
-				// to avoid conflicting input with real controller data
 				if (connected) {
 					viewModel.input.externalControllerActive = true
 					viewModel.setOnScreenControlsEnabled(false)

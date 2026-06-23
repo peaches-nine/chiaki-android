@@ -173,4 +173,14 @@ class Preferences(context: Context)
 	var touchPadKey
 		get() = sharedPreferences.getString(touchPadKeyTitle, "-1")
 		set(value) { sharedPreferences.edit().putString(touchPadKeyTitle, value).apply() }
+
+	val upscalerKey = "pref_upscaler"
+	var upscaler
+		get() = sharedPreferences.getString(upscalerKey, "off") ?: "off"
+		set(value) { sharedPreferences.edit().putString(upscalerKey, value).apply() }
+
+	val upscalerSharpnessKey = "pref_upscaler_sharpness"
+	var upscalerSharpness
+		get() = sharedPreferences.getInt(upscalerSharpnessKey, 50)
+		set(value) { sharedPreferences.edit().putInt(upscalerSharpnessKey, value).apply() }
 }

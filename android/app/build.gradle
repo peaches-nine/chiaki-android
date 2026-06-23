@@ -24,7 +24,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 12
-        versionName chiakiVersion+"-axi-250113"
+        versionName chiakiVersion
         externalNativeBuild {
             cmake {
                 arguments "-DCHIAKI_ENABLE_TESTS=OFF",
@@ -61,7 +61,7 @@ android {
     }
     buildTypes {
         debug{
-//            applicationIdSuffix = ".axi"
+// No debug suffix
         }
         release {
             minifyEnabled true

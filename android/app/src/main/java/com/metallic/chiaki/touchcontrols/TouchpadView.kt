@@ -10,9 +10,6 @@ import android.view.MotionEvent
 import android.view.View
 import com.metallic.chiaki.R
 import com.metallic.chiaki.lib.ControllerState
-import io.reactivex.Observable
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.Subject
 import kotlin.math.max
 
 class TouchpadView @JvmOverloads constructor(
@@ -59,9 +56,7 @@ class TouchpadView @JvmOverloads constructor(
 	}
 	private val pointerTouches = mutableMapOf<Int, Touch>()
 
-	private val stateSubject: Subject<ControllerState>
-		= BehaviorSubject.create<ControllerState>().also { it.onNext(state) }
-	val controllerState: Observable<ControllerState> get() = stateSubject
+	var stateCallback: ((ControllerState) -> Unit)? = null
 
 	private var shortPressingTouches = listOf<Touch>()
 	private val shortButtonPressLiftRunnable = Runnable {
@@ -163,6 +158,6 @@ class TouchpadView @JvmOverloads constructor(
 	private fun triggerStateChanged()
 	{
 		invalidate()
-		stateSubject.onNext(state)
+		stateCallback?.invoke(state)
 	}
 }

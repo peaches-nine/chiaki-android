@@ -34,6 +34,6 @@ public class StreamSurfaceView extends SurfaceView {
             }
         }
         // 例如在屏幕上显示 FPS 信息
-        Log.i("axixi","FPS: " + fps);
+        Log.i("Chiaki","FPS: " + fps);
     }
 }

@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import com.metallic.chiaki.databinding.FragmentTouchpadOnlyBinding
-import io.reactivex.rxkotlin.Observables.combineLatest
+import com.metallic.chiaki.lib.ControllerState
 
 class TouchpadOnlyFragment : TouchControlsFragment()
 {
@@ -18,15 +18,14 @@ class TouchpadOnlyFragment : TouchControlsFragment()
 	private var _binding: FragmentTouchpadOnlyBinding? = null
 	private val binding get() = _binding!!
 
+	private var tp1State = ControllerState()
+	private var tp2State = ControllerState()
+
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
 		FragmentTouchpadOnlyBinding.inflate(inflater, container, false).let {
 			_binding = it
-			controllerStateProxy.onNext(
-				combineLatest(ownControllerStateSubject, binding.touchpadView.controllerState) { a, b -> a or b }
-			)
-			controllerStateProxy.onNext(
-				combineLatest(ownControllerStateSubject, binding.touchpadView2.controllerState) { a, b -> a or b }
-			)
+			binding.touchpadView.stateCallback = { tp1State = it }
+			binding.touchpadView2.stateCallback = { tp2State = it }
 			it.root
 		}
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">千秋·阿西西</string>
-    <string name="title_main">Chiaki·千秋·阿西西</string>
+    <string name="app_name">Chiaki</string>
+    <string name="title_main">Chiaki·Chiaki</string>
     <string name="action_add_manual">手动添加控制器</string>
     <string name="action_add_manual_save">保存</string>
     <string name="action_connect_cancel_connect">取消</string>
@@ -143,7 +143,6 @@
 
     <string name="preferences_motion_gamepad_enabled_key">motion_gamepad_enabled</string>
 
-    <string name="preferences_about_axixi_key">about_axixi</string>
 
     <string name="preferences_rumble_trigger_gamepad_enabled_key">rumble_trigger_gamepad_enabled</string>
 

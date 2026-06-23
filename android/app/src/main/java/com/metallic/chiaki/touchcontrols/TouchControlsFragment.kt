@@ -12,30 +12,36 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import com.metallic.chiaki.databinding.FragmentControlsBinding
 import com.metallic.chiaki.lib.ControllerState
-import io.reactivex.Observable
-import io.reactivex.rxkotlin.Observables.combineLatest
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.Subject
 
 abstract class TouchControlsFragment : Fragment()
 {
 	protected var ownControllerState = ControllerState()
 		set(value)
 		{
-			val diff = field != value
 			field = value
-			if(diff)
-				ownControllerStateSubject.onNext(ownControllerState)
+			emitMergedState()
 		}
 
-	protected val ownControllerStateSubject: Subject<ControllerState>
-			= BehaviorSubject.create<ControllerState>().also { it.onNext(ownControllerState) }
+	// Set by StreamActivity to receive merged (own + touchpad) controller state
+	var controllerStateCallback: ((ControllerState) -> Unit)? = null
 
-	// to delay attaching to the touchpadView until it's available
-	protected val controllerStateProxy: Subject<Observable<ControllerState>>
-			= BehaviorSubject.create<Observable<ControllerState>>().also { it.onNext(ownControllerStateSubject) }
-	val controllerState: Observable<ControllerState> get() =
-		controllerStateProxy.flatMap { it }
+	// Touchpad state from the view, updated from subclass
+	protected var touchpadState: ControllerState? = null
+		set(value) {
+			field = value
+			emitMergedState()
+		}
+
+	private val mergedState = ControllerState()
+
+	private fun emitMergedState() {
+		val tp = touchpadState
+		if (tp != null)
+			ownControllerState.orInto(mergedState, tp)
+		else
+			ownControllerState.copyInto(mergedState)
+		controllerStateCallback?.invoke(mergedState)
+	}
 
 	var onScreenControlsEnabled: LiveData<Boolean>? = null
 }
@@ -48,9 +54,9 @@ class DefaultTouchControlsFragment : TouchControlsFragment()
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
 		FragmentControlsBinding.inflate(inflater, container, false).let {
 			_binding = it
-			controllerStateProxy.onNext(
-				combineLatest(ownControllerStateSubject, binding.touchpadView.controllerState) { a, b -> a or b }
-			)
+			binding.touchpadView.stateCallback = { state ->
+				touchpadState = state
+			}
 			it.root
 		}
 

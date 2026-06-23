@@ -221,6 +221,59 @@ data class ControllerState constructor(
 		orientW = orientW
 	)
 
+	/** Write `this or o` into `dest`, avoiding allocation. */
+	fun orInto(dest: ControllerState, o: ControllerState) {
+		dest.buttons = buttons or o.buttons
+		dest.l2State = maxOf(l2State, o.l2State)
+		dest.r2State = maxOf(r2State, o.r2State)
+		dest.leftX = maxAbs(leftX, o.leftX)
+		dest.leftY = maxAbs(leftY, o.leftY)
+		dest.rightX = maxAbs(rightX, o.rightX)
+		dest.rightY = maxAbs(rightY, o.rightY)
+		for (i in touches.indices) {
+			val t = if (touches[i].id >= 0) touches[i] else o.touches[i]
+			dest.touches[i].id = t.id
+			dest.touches[i].x = t.x
+			dest.touches[i].y = t.y
+		}
+		dest.gyroX = gyroX
+		dest.gyroY = gyroY
+		dest.gyroZ = gyroZ
+		dest.accelX = accelX
+		dest.accelY = accelY
+		dest.accelZ = accelZ
+		dest.orientX = orientX
+		dest.orientY = orientY
+		dest.orientZ = orientZ
+		dest.orientW = orientW
+	}
+
+	/** Copy this state into `dest`. */
+	fun copyInto(dest: ControllerState) {
+		dest.buttons = buttons
+		dest.l2State = l2State
+		dest.r2State = r2State
+		dest.leftX = leftX
+		dest.leftY = leftY
+		dest.rightX = rightX
+		dest.rightY = rightY
+		for (i in touches.indices) {
+			dest.touches[i].id = touches[i].id
+			dest.touches[i].x = touches[i].x
+			dest.touches[i].y = touches[i].y
+		}
+		dest.gyroX = gyroX
+		dest.gyroY = gyroY
+		dest.gyroZ = gyroZ
+		dest.accelX = accelX
+		dest.accelY = accelY
+		dest.accelZ = accelZ
+		dest.orientX = orientX
+		dest.orientY = orientY
+		dest.orientZ = orientZ
+		dest.orientW = orientW
+	}
+
 	override fun equals(other: Any?): Boolean
 	{
 		if(this === other) return true

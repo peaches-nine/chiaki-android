@@ -162,18 +162,6 @@ class SettingsFragment : PreferenceFragmentCompat(), TitleFragment {
             ?.setOnPreferenceClickListener { exportSettings(); true }
         preferenceScreen.findPreference<Preference>(getString(R.string.preferences_import_settings_key))
             ?.setOnPreferenceClickListener { importSettings(); true }
-
-        preferenceScreen.findPreference<Preference>(getString(R.string.preferences_about_axixi_key))
-            ?.setOnPreferenceClickListener {
-                try {
-                    val i = Intent(Intent.ACTION_VIEW)
-                    i.setData(Uri.parse("https://space.bilibili.com/16893379"))
-                    requireContext().startActivity(i)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                true
-            }
     }
 
     override fun onDestroy() {

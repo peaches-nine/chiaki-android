@@ -121,8 +121,8 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:key="category_axi"
-        app:title="阿西西的日常">
+        app:key="category_display"
+        app:title="显示与操控">
 
         <SwitchPreference
             app:key="@string/preferences_screen_portrait_enabled_key"
@@ -152,13 +152,32 @@
             app:summary="如果你的安卓掌机，发现体感不适配，建议勾选此选项，比如Ayaneo EVO"
             app:icon="@drawable/ic_motion" />
 
-        <Preference
-            app:key="@string/preferences_about_axixi_key"
-            app:title="关于阿西西的日常"
-            app:summary="点击会跳转到作者B站个人空间"
-            app:icon="@drawable/icon_about_ax"/>
-
     </PreferenceCategory>
+
+	<PreferenceCategory
+	    app:key="category_upscaler"
+	    app:title="超分辨率">
+
+	    <ListPreference
+	        app:key="pref_upscaler"
+	        app:title="超分算法"
+	        app:summary="关闭可降低GPU负载"
+	        app:defaultValue="off"
+	        app:entries="@array/upscaler_names"
+	        app:entryValues="@array/upscaler_values"
+	        app:icon="@drawable/ic_export"/>
+
+	    <ListPreference
+	        app:key="pref_upscaler_sharpness"
+	        app:title="超分锐度"
+	        app:summary="数值越高画面越锐利，过高会产生锯齿"
+	        app:dependency="pref_upscaler"
+	        app:defaultValue="50"
+	        app:entries="@array/upscaler_sharpness_names"
+	        app:entryValues="@array/upscaler_sharpness_values"
+	        app:icon="@drawable/ic_export"/>
+
+	</PreferenceCategory>
 
     <PreferenceCategory
         app:key="category_export"

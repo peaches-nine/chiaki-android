@@ -31,3 +31,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+third-party/gf-complete/
+third-party/jerasure/
+third-party/nanopb/

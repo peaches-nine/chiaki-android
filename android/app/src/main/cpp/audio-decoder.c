@@ -185,7 +185,7 @@ beach:
 static void android_chiaki_audio_haptics_decoder_frame(uint8_t *buf, size_t buf_size, void *user){
     if(buf_size < 25){return;}
     ChiakiSession *session = user;
-    CHIAKI_LOGI(session->log, "axixiLog-触觉反馈-音频解析-frame");
+    CHIAKI_LOGI(session->log, "Chiaki-HapticAudio-Frame");
     ChiakiEvent event = { 0 };
     event.type = CHIAKI_EVENT_RUMBLE;
     event.rumble.unknown = buf[0];

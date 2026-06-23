@@ -168,12 +168,12 @@ static void android_chiaki_event_cb(ChiakiEvent *event, void *user)
 	JNIEnv *env = attach_thread_jni();
 	if(!env)
 		return;
-    CHIAKI_LOGI(&global_log, "axixiLog--"+event->type);
+    CHIAKI_LOGI(&global_log, "Chiaki-event"+event->type);
 
 	switch(event->type)
 	{
 		case CHIAKI_EVENT_CONNECTED:
-            CHIAKI_LOGI(&global_log, "axixiLog-连接成功");
+            CHIAKI_LOGI(&global_log, "Chiaki-Connected");
             E->CallVoidMethod(env, session->java_session,
 							  session->java_session_event_connected_meth);
 			break;
@@ -184,7 +184,7 @@ static void android_chiaki_event_cb(ChiakiEvent *event, void *user)
 			break;
 		case CHIAKI_EVENT_QUIT:
 		{
-            CHIAKI_LOGI(&global_log, "axixiLog-退出");
+            CHIAKI_LOGI(&global_log, "Chiaki-Quit");
 			char *reason_str = strdup_jni(event->quit.reason_str);
 			jstring reason_str_java = reason_str ? E->NewStringUTF(env, reason_str) : NULL;
 			E->CallVoidMethod(env, session->java_session,
@@ -198,7 +198,7 @@ static void android_chiaki_event_cb(ChiakiEvent *event, void *user)
 		}
         case CHIAKI_EVENT_RUMBLE:
 //            ChiakiLog *log = malloc(sizeof(ChiakiLog));
-            CHIAKI_LOGI(&global_log, "axixiLog-ps4震动");
+            CHIAKI_LOGI(&global_log, "Chiaki-Rumble");
             E->CallVoidMethod(env, session->java_session,
 							  session->java_session_event_rumble_meth,
 							  (jint)event->rumble.left,
@@ -218,14 +218,17 @@ static void android_chiaki_event_cb(ChiakiEvent *event, void *user)
                       right_arr);
     E->DeleteLocalRef(env, left_arr);
     E->DeleteLocalRef(env, right_arr);
-    CHIAKI_LOGI(&global_log, "axixiLog-扳机震动");
+    CHIAKI_LOGI(&global_log, "Chiaki-TriggerFX");
     break;
 }
 		default:
 			break;
 	}
 
-	(*global_vm)->DetachCurrentThread(global_vm);
+	// Chiaki Takion/Session threads are persistent for session lifetime.
+	// First AttachCurrentThread per thread is expensive; subsequent calls are no-ops.
+	// Do NOT detach: native threads exit before JVM, ART auto-cleans up.
+	// To revert, uncomment: (*global_vm)->DetachCurrentThread(global_vm);
 }
 
 JNIEXPORT void JNICALL JNI_FCN(sessionCreate)(JNIEnv *env, jobject obj, jobject result, jobject connect_info_obj, jstring log_file_str, jboolean log_verbose, jobject java_session)
