@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Chiaki</string>
-    <string name="title_main">Chiaki·Chiaki</string>
+    <string name="app_name">Chiaki Remote Play</string>
+    <string name="title_main">Chiaki</string>
     <string name="action_add_manual">手动添加控制器</string>
     <string name="action_add_manual_save">保存</string>
     <string name="action_connect_cancel_connect">取消</string>
