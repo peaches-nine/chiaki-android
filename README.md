@@ -1,122 +1,66 @@
-# 主项目来自: https://git.sr.ht/~thestr4ng3r/chiaki <br>此项目是对安卓端进行的功能修改。
+# Chiaki Android
 
-# Chiaki Android 阿西西修改版
-1、汉化中文 & PS5 1080P60 HDR显示<br>
-2、实现ps4、ps5游戏震动反馈。其中ps4游戏可以直接使用手柄，ps5游戏关闭手柄震动选项，使用手机震动马达，连接支持震动的手柄，打开输入法-振动重定向 也可以使用手柄震动。<br>
-3、增加虚拟控制器开关选项<br>
-4、串流界面，增加返回键 确认弹窗 防止误触可能直接结束串流。<br>
-5、返回弹窗中新增切换图层选项，此功能原来是根据状态栏的显示与隐藏 展示虚拟控制器 选项。<br>
-6、增加映射虚拟触控板按键<br>
-7、支持竖屏操作模式<br>
-8、增加填充刘海选项 实现全屏展示<br>
-9、如果你了解安卓端手柄震动相关知识，可以提交修改，或者自行修改均可。<br>
-
-
-![Chiaki Logo](assets/chiaki_wide.png)
-
-# Chiaki
+基于 [chiaki](https://git.sr.ht/~thestr4ng3r/chiaki) 修改的 Android 客户端，增加 PS5 DualSense 手柄全功能支持（通过 [DS5Dongle](https://github.com/awalol/DS5Dongle) USB 适配器）、FSR/NIS 超分、性能优化。
 
 **Disclaimer:** This project is not endorsed or certified by Sony Interactive Entertainment LLC.
 
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/c81ogebvsmo43dd3?svg=true)](https://ci.appveyor.com/project/thestr4ng3r/chiaki) [![builds.sr.ht Status](https://builds.sr.ht/~thestr4ng3r/chiaki.svg)](https://builds.sr.ht/~thestr4ng3r/chiaki?)
+## 新增功能
 
-Chiaki is a Free and Open Source Software Client for PlayStation 4 and PlayStation 5 Remote Play
-for Linux, FreeBSD, OpenBSD, NetBSD, Android, macOS, Windows, Nintendo Switch and potentially even more platforms.
+- **DS5Dongle 集成** — 插入 DS5Dongle（Pico 2W USB 蓝牙适配器）后自动识别，支持 HD 震动、自适应扳机、触摸板、陀螺仪完整功能，拔掉后自动切回虚拟按键
+- **FSR 1.0 / NIS 超分** — 设置中可选 FSR 1.0 或 NVIDIA Image Scaling，支持锐度调节
+- **架构优化** — ControllerState 内存复用、JNI 事件回调线程驻留、RxJava 热路径替换为回调
 
-![Screenshot](assets/screenshot.png)
+## 构建
 
-## Project Status
+### 环境需求
 
-As all relevant features are implemented, this project is considered to be finished and in maintenance mode only.
-No major updates are planned and contributions are only accepted in special cases.
+- JDK 17+
+- Android SDK 33+、NDK 25+
+- CMake 3.22+、Python 3 + protobuf
 
-## Installing
+### 编译
 
-You can either download a pre-built release or build Chiaki from source.
+```bash
+git clone https://github.com/peaches-nine/chiaki-android.git
+cd chiaki-android
 
-### Downloading a Release
+# 初始化缺失的子模块
+git clone --depth 1 https://github.com/nanopb/nanopb.git third-party/nanopb
+git clone --depth 1 https://github.com/tsuraan/Jerasure.git third-party/jerasure
+git clone --depth 1 https://github.com/ceph/gf-complete.git third-party/gf-complete
 
-Builds are provided for Linux, Android, macOS, Nintendo Switch and Windows.
+# 设置 sdk/ndk 路径
+cd android
+echo "sdk.dir=$ANDROID_HOME" > local.properties
+echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
 
-You can download them [here](https://git.sr.ht/~thestr4ng3r/chiaki/refs).
-
-* **Linux**: The provided file is an [AppImage](https://appimage.org/). Simply make it executable (`chmod +x <file>.AppImage`) and run it.
-* **Android**: Install from [F-Droid](https://f-droid.org/packages/com.metallic.chiaki/) or download the APK from Sourcehut.
-* **macOS**: Drag the application from the `.dmg` into your Applications folder.
-* **Windows**: Extract the `.zip` file and execute `chiaki.exe`.
-* **Switch**: Download the `.nro` file and copy it into the `switch/` directory on your SD card.
-
-### Building from Source
-
-Dependencies are CMake, Qt 5 with QtMultimedia, QtOpenGL and QtSvg, FFMPEG (libavcodec with H264 is enough), libopus, OpenSSL 1.1, SDL 2,
-protoc and the protobuf Python library (only used during compilation for Nanopb). Then, Chiaki builds just like any other CMake project:
-```
-git submodule update --init
-mkdir build && cd build
-cmake ..
-make
+# 编译 APK
+./gradlew assembleDebug
+# 输出: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-For more detailed platform-specific instructions, see [doc/platform-build.md](doc/platform-build.md) or [switch/](./switch/README.md) for Nintendo Switch.
+## 使用 DS5Dongle
 
-## Usage
+1. 将 DS5Dongle 固件刷入 Pico 2W
+2. DualSense 手柄通过蓝牙配对到 DS5Dongle
+3. DS5Dongle 通过 USB-OTG 连接 Android 手机
+4. 打开 chiaki，首次插上会弹出 USB 权限对话框，**允许**
+5. 连接 PS5，手柄震动和自适应扳机在支持的游戏里直接生效
+6. 手柄扬声器和耳机孔通过 DS5Dongle 的 USB 音频自动路由
 
-If your Console is on your local network, is turned on or in standby mode and does not have Discovery explicitly disabled, Chiaki should find it.
-Otherwise, you can add it manually.
-To do so, click the "+" icon in the top right, and enter your Console's IP address.
+## 超分设置
 
-You will then need to register your Console with Chiaki. You will need two more pieces of information to do this.
+设置 → 超分辨率 → 选择 FSR 1.0 或 NIS，调节锐度 0-100。关闭时走原生 SurfaceView，零额外开销。
 
-### Obtaining your PSN AccountID
+## 许可
 
-Starting with PS4 7.0, it is necessary to use a so-called "AccountID" as opposed to the "Online-ID" for registration (streaming itself did not change).
-This ID seems to be a unique identifier for a PSN Account and it can be obtained from the PSN after logging in using OAuth.
-A Python 3 script which does this is provided in [scripts/psn-account-id.py](scripts/psn-account-id.py).
-Simply run it in a terminal and follow the instructions. Once you know your ID, write it down. You will likely never have to do this process again.
+- 本项目基于 [chiaki](https://git.sr.ht/~thestr4ng3r/chiaki)，使用 AGPL-3.0-only-OpenSSL 许可
+- FSR shader 来自 [Moonlight](https://github.com/moonlight-stream/moonlight-android)（GPL-3.0）
+- NIS 为独立实现的 GLSL 版本
 
-### Obtaining a Registration PIN
+## 致谢
 
-To register a Console with a PIN, it must be put into registration mode. To do this on a PS4, simply go to:
-Settings -> Remote Play -> Add Device, or on a PS5: Settings -> System -> Remote Play -> Link Device.
-
-You can now double-click your Console in Chiaki's main window to start Remote Play.
-
-## Acknowledgements
-
-This project has only been made possible because of the following Open Source projects:
-[Rizin](https://rizin.re),
-[Cutter](https://cutter.re),
-[Frida](https://www.frida.re) and
-[x64dbg](https://x64dbg.com).
-
-Also thanks to [delroth](https://github.com/delroth) for analyzing the registration and wakeup protocol,
-[grill2010](https://github.com/grill2010) for analyzing the PSN's OAuth Login,
-as well as a huge thank you to [FioraAeterna](https://github.com/FioraAeterna) for giving me some
-extremely helpful information about FEC and error correction.
-
-## About
-
-Created by Florian Märkl
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License version 3
-as published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Additional permission under GNU AGPL version 3 section 7
-
-If you modify this program, or any covered work, by linking or
-combining it with the OpenSSL project's OpenSSL library (or a
-modified version of that library), containing parts covered by the
-terms of the OpenSSL or SSLeay licenses, the Free Software Foundation
-grants you additional permission to convey the resulting work.
-Corresponding Source for a non-source form of such a combination
-shall include the source code for the parts of OpenSSL used as well
-as that of the covered work.
+- [Florian Märkl](https://git.sr.ht/~thestr4ng3r) — chiaki 原作者
+- [Axixi2233](https://github.com/Axixi2233) — Android 功能修改
+- [Moonlight](https://moonlight-stream.org) — FSR 实现参考
+- [awalol](https://github.com/awalol) — DS5Dongle 固件
